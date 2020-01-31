@@ -66,6 +66,9 @@ trait BaseEmrCluster extends ResourceObject {
   def withMasterInstanceBidPrice(price: HDouble): Self = updateEmrClusterFields(
     emrClusterFields.copy(masterInstanceBidPrice = Option(price))
   )
+  def withOnDemandMasterInstancePrice: Self = updateEmrClusterFields(
+    emrClusterFields.copy(masterInstanceBidPrice = None)
+  )
 
   def masterInstanceType = emrClusterFields.masterInstanceType
   def withMasterInstanceType(instanceType: HString): Self = updateEmrClusterFields(
@@ -75,6 +78,9 @@ trait BaseEmrCluster extends ResourceObject {
   def coreInstanceBidPrice = emrClusterFields.coreInstanceBidPrice
   def withCoreInstanceBidPrice(price: HDouble): Self = updateEmrClusterFields(
     emrClusterFields.copy(coreInstanceBidPrice = Option(price))
+  )
+  def withOnDemandCoreInstancePrice: Self = updateEmrClusterFields(
+    emrClusterFields.copy(coreInstanceBidPrice=None)
   )
 
   def coreInstanceCount = emrClusterFields.coreInstanceCount
@@ -90,6 +96,9 @@ trait BaseEmrCluster extends ResourceObject {
   def taskInstanceBidPrice = emrClusterFields.taskInstanceBidPrice
   def withTaskInstanceBidPrice(price: HDouble): Self = updateEmrClusterFields(
     emrClusterFields.copy(taskInstanceBidPrice = Option(price))
+  )
+  def withOnDemandTaskInstancePrice: Self = updateEmrClusterFields(
+    emrClusterFields.copy(taskInstanceBidPrice = None)
   )
 
   def taskInstanceCount = emrClusterFields.taskInstanceCount
@@ -152,6 +161,12 @@ trait BaseEmrCluster extends ResourceObject {
       true
     })
 
+    // helper to serialize instance prices
+    def serializePrice(price: Option[HDouble]) = price match {
+      case Some(value) => Option(value.serialize)
+      case None => Option("OnDemandPrice")
+    }
+
     new AdpEmrCluster(
       id = id,
       name = name,
@@ -161,14 +176,14 @@ trait BaseEmrCluster extends ResourceObject {
       enableDebugging = enableDebugging.map(_.serialize),
       hadoopSchedulerType = hadoopSchedulerType.map(_.serialize),
       keyPair = keyPair.map(_.serialize),
-      masterInstanceBidPrice = masterInstanceBidPrice.map(_.serialize),
+      masterInstanceBidPrice = serializePrice(masterInstanceBidPrice),
       masterInstanceType = masterInstanceType.map(_.serialize),
       masterEbsConfiguration = masterEbsConfiguration.map(_.ref),
-      coreInstanceBidPrice = coreInstanceBidPrice.map(_.serialize),
+      coreInstanceBidPrice = serializePrice(coreInstanceBidPrice),
       coreInstanceCount = Option(coreInstanceCount.serialize),
       coreInstanceType = coreInstanceType.map(_.serialize),
       coreEbsConfiguration = coreEbsConfiguration.map(_.ref),
-      taskInstanceBidPrice = if (taskInstanceCount.isZero.forall(! _)) taskInstanceBidPrice.map(_.serialize) else None,
+      taskInstanceBidPrice = if (taskInstanceCount.isZero.forall(! _)) serializePrice(taskInstanceBidPrice) else None,
       taskInstanceCount = if (taskInstanceCount.isZero.forall(! _)) Option(taskInstanceCount.serialize) else None,
       taskInstanceType = if (taskInstanceCount.isZero.forall(! _)) taskInstanceType.map(_.serialize) else None,
       taskEbsConfiguration = taskEbsConfiguration.map(_.ref),
